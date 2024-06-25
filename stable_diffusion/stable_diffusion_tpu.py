@@ -13,7 +13,7 @@ _MAX_BATCH_SIZE = 64
 
 logger = logging.getLogger("ray.serve")
 
-@serve.deployment(num_replicas=1)
+@serve.deployment(num_replicas=1, route_prefix="/")
 @serve.ingress(app)
 class APIIngress:
     def __init__(self, diffusion_model_handle) -> None:
@@ -66,6 +66,9 @@ class StableDiffusion:
     self._run_with_profiler = run_with_profiler
     self._profiler_dir = "/tmp/tensorboard"
 
+    logger.info("Total number of TPU devices: %d", jax.device_count())
+    logger.info("TPU devices on this host: %d", jax.local_device_count())
+
     if warmup:
       logger.info("Sending warmup requests.")
       warmup_prompts = ["A warmup request"] * warmup_batch_size
@@ -85,7 +88,8 @@ class StableDiffusion:
     import numpy as np
 
     rng = jax.random.PRNGKey(0)
-    rng = jax.random.split(rng, jax.device_count())
+    rng = jax.random.split(rng, jax.local_device_count())
+    num_inference_steps = 50
 
     assert prompts, "prompt parameter cannot be empty"
     logger.info("Prompts: %s", prompts)
@@ -96,8 +100,7 @@ class StableDiffusion:
       jax.profiler.start_trace(self._profiler_dir)
 
     time_start = time.time()
-    images = self._p_generate(prompt_ids, self._p_params, rng)
-    images = images.block_until_ready()
+    images = self._pipeline(prompt_ids, self._p_params, rng, num_inference_steps, jit=True).images
     elapsed = time.time() - time_start
     if self._run_with_profiler:
       jax.profiler.stop_trace()
@@ -107,7 +110,7 @@ class StableDiffusion:
     images = images.reshape(
         (images.shape[0] * images.shape[1],) + images.shape[-3:])
     logger.info("Shape of images afterwards: %s", images.shape)
-    return self._pipeline.numpy_to_pil(np.array(images))
+    return self._pipeline.numpy_to_pil(np.asarray(images))
 
   @serve.batch(batch_wait_timeout_s=10, max_batch_size=_MAX_BATCH_SIZE)
   async def batched_generate_handler(self, prompts: List[str]):
