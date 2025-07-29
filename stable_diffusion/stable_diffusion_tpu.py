@@ -58,11 +58,18 @@ class StableDiffusion:
 
     self._pipeline, params = FlaxStableDiffusionPipeline.from_pretrained(
         model_id,
-        revision="bf16",
-        dtype=jnp.bfloat16)
+        dtype=jnp.bfloat16,
+        variant="bf16",
+    )
 
+    # Replicate model parameters across TPU devices
     self._p_params = replicate(params)
-    self._p_generate = pmap(self._pipeline._generate)
+
+    # Use the new public call API instead of _generate
+    def generate_fn(prompt_ids, params, rng):
+        return self._pipeline(prompt_ids, params, rng).images
+
+    self._p_generate = pmap(generate_fn)
     self._run_with_profiler = run_with_profiler
     self._profiler_dir = "/tmp/tensorboard"
 
@@ -89,8 +96,15 @@ class StableDiffusion:
 
     assert prompts, "prompt parameter cannot be empty"
     logger.info("Prompts: %s", prompts)
-    prompt_ids = self._pipeline.prepare_inputs(prompts)
-    prompt_ids = shard(prompt_ids)
+
+    tokenizer = self._pipeline.tokenizer
+    tokenized = tokenizer(
+        prompts,
+        return_tensors="np",
+        padding="max_length",
+        truncation=True
+    )
+    prompt_ids = shard(tokenized.input_ids)
     logger.info("Sharded prompt ids has shape: %s", prompt_ids.shape)
     if self._run_with_profiler:
       jax.profiler.start_trace(self._profiler_dir)
