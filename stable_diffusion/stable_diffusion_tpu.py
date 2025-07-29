@@ -58,9 +58,8 @@ class StableDiffusion:
 
     self._pipeline, params = FlaxStableDiffusionPipeline.from_pretrained(
         model_id,
-        from_pt=True,
+        revision="bf16",
         dtype=jnp.bfloat16,
-        variant="bf16",
     )
 
     # Replicate model parameters across TPU devices
