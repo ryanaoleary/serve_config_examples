@@ -58,6 +58,7 @@ class StableDiffusion:
 
     self._pipeline, params = FlaxStableDiffusionPipeline.from_pretrained(
         model_id,
+        from_pt=True,
         dtype=jnp.bfloat16,
         variant="bf16",
     )
