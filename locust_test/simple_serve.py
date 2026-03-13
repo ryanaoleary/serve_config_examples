@@ -1,5 +1,6 @@
 """
-This file...
+This file contains a simple Serve deployment that increments a counter
+when it receives a request.
 """
 
 from ray import serve
