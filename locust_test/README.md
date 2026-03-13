@@ -1,7 +1,8 @@
-# Incr-Upgrade-Locust
+# RayService NewClusterWithIncrementalUpgrade Locust Test
 
 
-Locust load test setup for KubeRay incremental upgrade.
+This folder contains the [locust](https://locust.io/) load test setup for a RayService incremental upgrade with KubeRay.
+For more details on incremental upgrades, see the [Ray documentation](https://docs.ray.io/en/latest/cluster/kubernetes/user-guides/rayservice-incremental-upgrade.html).
 
 > A Locust test is essentially just a Python program making requests to the system you want to test.
 
