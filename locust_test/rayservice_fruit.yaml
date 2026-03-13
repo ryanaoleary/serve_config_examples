@@ -1,0 +1,85 @@
+apiVersion: ray.io/v1
+kind: RayService
+metadata:
+  name: fruitmarket-locust
+spec:
+  upgradeStrategy:
+    type: NewClusterWithIncrementalUpgrade
+    clusterUpgradeOptions:
+      gatewayClassName: istio
+      stepSizePercent: 10
+      intervalSeconds: 30
+      maxSurgePercent: 20
+  serveConfigV2: |
+    applications:
+      - name: fruit_app
+        import_path: fruit.deployment_graph
+        route_prefix: /fruit
+        runtime_env:
+          working_dir: "https://github.com/ray-project/test_dag/archive/78b4a5da38796123d9f9ffff59bab2792a043e95.zip"
+        deployments:
+          - name: MangoStand
+            num_replicas: 1
+            user_config:
+              price: 3
+            ray_actor_options:
+              num_cpus: 0.3
+          - name: OrangeStand
+            num_replicas: 1
+            user_config:
+              price: 2
+            ray_actor_options:
+              num_cpus: 0.1
+          - name: FruitMarket
+            num_replicas: 1
+            ray_actor_options:
+              num_cpus: 0.5
+  rayClusterConfig:
+    rayVersion: "2.49.2"
+    enableInTreeAutoscaling: true
+    headGroupSpec:
+      rayStartParams: {}
+      template:
+        spec:
+          containers:
+            - name: ray-head
+              image: rayproject/ray:2.49.2
+              resources:
+                requests:
+                  cpu: "2"
+                  memory: "3Gi"
+                requests:
+                  cpu: "2"
+                  memory: "3Gi"
+              ports:
+                - containerPort: 6379
+                  name: gcs-server
+                - containerPort: 8265
+                  name: dashboard
+                - containerPort: 10001
+                  name: client
+                - containerPort: 8000
+                  name: serve
+    workerGroupSpecs:
+      - groupName: small-group
+        replicas: 1
+        minReplicas: 1
+        maxReplicas: 4
+        rayStartParams:
+          num-cpus: "1"
+        template:
+          spec:
+            containers:
+              - name: ray-worker
+                image: rayproject/ray:2.49.2
+                lifecycle:
+                  preStop:
+                    exec:
+                      command: ["/bin/sh", "-c", "ray stop"]
+                resources:
+                  requests:
+                    cpu: "300m"
+                    memory: "1Gi"
+                  limits:
+                    cpu: "500m"
+                    memory: "1Gi"
