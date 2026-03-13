@@ -2,7 +2,7 @@
 Send requests to simple Serve application.
 
 For details, please refer to:
-https://github.com/JiangJiaWei1103/Incr-Upgrade-Locust/blob/main/simple_serve.py
+https://github.com/ray-project/serve_config_examples/blob/main/locust_test/simple_serve.py
 """
 from locust import HttpUser, constant, task
 

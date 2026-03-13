@@ -13,10 +13,10 @@ spec:
   serveConfigV2: |
     applications:
       - name: simple_app
-        import_path: simple_serve.app
+        import_path: locust_test/simple_serve.app
         route_prefix: /test
         runtime_env:
-          working_dir: "https://github.com/jiangjiawei1103/incr-upgrade-locust/archive/main.zip"
+          working_dir: "https://github.com/ray-project/serve_config_examples/archive/refs/heads/master.zip"
         deployments:
           - name: SimpleDeployment
             autoscaling_config:
