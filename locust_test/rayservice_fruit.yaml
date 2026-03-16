@@ -48,7 +48,7 @@ spec:
                 requests:
                   cpu: "2"
                   memory: "3Gi"
-                requests:
+                limits:
                   cpu: "2"
                   memory: "3Gi"
               ports:
